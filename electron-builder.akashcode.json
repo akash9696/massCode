@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json.schemastore.org/electron-builder",
+  "appId": "io.akashcode.app",
+  "productName": "AkashCode",
+  "artifactName": "${productName}-${version}-${arch}.${ext}",
+  "directories": {
+    "output": "dist-akashcode"
+  },
+  "files": [
+    "build/renderer/**/*",
+    "build/main/**/*",
+    "build/shared/**/*",
+    "!build/**/*.map"
+  ],
+  "asarUnpack": [
+    "node_modules/@lydell/**/*"
+  ],
+  "publish": {
+    "provider": "github",
+    "owner": "akash9696",
+    "repo": "massCode"
+  },
+  "mac": {
+    "target": [
+      "dmg",
+      "zip"
+    ],
+    "icon": "build/icons/icon.icns",
+    "category": "public.app-category.productivity",
+    "hardenedRuntime": false,
+    "notarize": false,
+    "identity": null
+  },
+  "protocols": [
+    {
+      "name": "AkashCode",
+      "schemes": [
+        "masscode"
+      ]
+    }
+  ]
+}
