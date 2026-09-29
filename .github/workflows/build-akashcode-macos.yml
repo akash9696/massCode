@@ -35,10 +35,10 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Test note fragments
-        run: pnpm test -- noteFragments
+        run: pnpm exec vitest run src/renderer/components/notes/__tests__/noteFragments.test.ts
 
       - name: Build AkashCode for macOS
-        run: pnpm build:akashcode:mac
+        run: pnpm build:akashcode:mac:arm64
 
       - name: List build outputs
         run: ls -lah dist-akashcode
