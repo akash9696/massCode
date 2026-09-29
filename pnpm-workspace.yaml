@@ -1,0 +1,12 @@
+packages:
+  - '.'
+
+allowBuilds:
+  '@parcel/watcher': true
+  electron: true
+  esbuild: true
+  simple-git-hooks: true
+  vue-demi: true
+
+patchedDependencies:
+  httpsnippet@3.0.10: patches/httpsnippet@3.0.10.patch

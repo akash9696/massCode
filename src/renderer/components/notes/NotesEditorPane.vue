@@ -40,6 +40,13 @@ import {
   getEntryNameValidationIssue,
 } from '~/shared/entryNameValidation'
 import { shouldSyncSelectedNoteContent } from './editorSync'
+import {
+  createNoteFragmentId,
+  getNextNoteFragmentLabel,
+  parseNoteFragments,
+  serializeNoteFragments,
+  type NoteFragment,
+} from './noteFragments'
 import { getTextStats, shouldApplyTextStatsUpdate } from './textStats'
 
 const {
@@ -359,11 +366,30 @@ watch(
 )
 
 const editorContent = ref('')
+const noteFragments = ref<NoteFragment[]>([])
+const activeFragmentId = ref('')
+const fragmentSelectionByNote = new Map<number, string>()
 const editorCursor = ref(0)
 // id заметки, контент которой сейчас находится в редакторе: меняется только
 // вместе с editorContent, когда полная запись уже загружена.
 const editorNoteId = ref<number | undefined>()
 const statsContent = ref('')
+
+function persistNoteFragments(fragments: NoteFragment[]) {
+  noteFragments.value = fragments
+
+  if (
+    isSelectedNoteContentReady.value
+    && selectedNote.value
+    && selectedNote.value.id === editorNoteId.value
+  ) {
+    updateNoteContent(
+      selectedNote.value.id,
+      serializeNoteFragments(fragments),
+    )
+  }
+}
+
 let statsRevision = 0
 const updateStatsContent = useDebounceFn(
   (noteId: number | undefined, value: string, revision: number) => {
@@ -400,11 +426,25 @@ watch(
       return
     }
 
-    const nextContent = nextNote?.content ?? ''
+    const nextSourceContent = nextNote?.content ?? ''
+    const nextFragments = parseNoteFragments(nextSourceContent)
+    const rememberedId = nextNote
+      ? fragmentSelectionByNote.get(nextNote.id)
+      : undefined
+    const nextActiveFragment
+      = nextFragments.find(fragment => fragment.id === rememberedId)
+        ?? nextFragments[0]
+
     statsRevision += 1
-    editorContent.value = nextContent
+    noteFragments.value = nextFragments
+    activeFragmentId.value = nextActiveFragment?.id ?? ''
+    editorContent.value = nextActiveFragment?.content ?? ''
     editorNoteId.value = nextNote?.id
-    statsContent.value = nextContent
+    statsContent.value = editorContent.value
+
+    if (nextNote && nextActiveFragment) {
+      fragmentSelectionByNote.set(nextNote.id, nextActiveFragment.id)
+    }
 
     if (nextNote && nextNote.id === pendingContentSearchNoteId) {
       const revision = ++searchShortcutRevision
@@ -428,6 +468,12 @@ const content = computed({
     statsRevision += 1
     editorContent.value = value
     updateStatsContent(editorNoteId.value, value, statsRevision)
+    const nextFragments = noteFragments.value.map(fragment =>
+      fragment.id === activeFragmentId.value
+        ? { ...fragment, content: value }
+        : fragment,
+    )
+    noteFragments.value = nextFragments
 
     // Сохраняем только если редактор отображает выбранную заметку:
     // в момент переключения ввод не должен уйти в новую заметку
@@ -437,10 +483,99 @@ const content = computed({
       && selectedNote.value
       && selectedNote.value.id === editorNoteId.value
     ) {
-      updateNoteContent(selectedNote.value.id, value)
+      updateNoteContent(
+        selectedNote.value.id,
+        serializeNoteFragments(nextFragments),
+      )
     }
   },
 })
+
+function selectNoteFragment(id: string) {
+  const fragment = noteFragments.value.find(fragment => fragment.id === id)
+  if (!fragment || id === activeFragmentId.value)
+    return
+
+  statsRevision += 1
+  activeFragmentId.value = id
+  editorContent.value = fragment.content
+  statsContent.value = fragment.content
+  editorCursor.value = 0
+
+  if (editorNoteId.value !== undefined)
+    fragmentSelectionByNote.set(editorNoteId.value, id)
+
+  nextTick(() => notesEditorRef.value?.focusEditor())
+}
+
+function addNoteFragment() {
+  const fragment: NoteFragment = {
+    id: createNoteFragmentId(),
+    label: getNextNoteFragmentLabel(noteFragments.value),
+    content: '',
+  }
+  const nextFragments = [...noteFragments.value, fragment]
+
+  persistNoteFragments(nextFragments)
+  activeFragmentId.value = fragment.id
+  editorContent.value = ''
+  statsRevision += 1
+  statsContent.value = ''
+  editorCursor.value = 0
+
+  if (editorNoteId.value !== undefined)
+    fragmentSelectionByNote.set(editorNoteId.value, fragment.id)
+
+  nextTick(() => notesEditorRef.value?.focusEditor())
+}
+
+function renameNoteFragment(id: string, label: string) {
+  const normalized = label.trim()
+  if (!normalized)
+    return
+
+  persistNoteFragments(
+    noteFragments.value.map(fragment =>
+      fragment.id === id ? { ...fragment, label: normalized } : fragment,
+    ),
+  )
+}
+
+function deleteNoteFragment(id: string) {
+  if (noteFragments.value.length <= 1)
+    return
+
+  const index = noteFragments.value.findIndex(fragment => fragment.id === id)
+  if (index < 0)
+    return
+
+  const nextFragments = noteFragments.value.filter(fragment => fragment.id !== id)
+  let nextActiveId = activeFragmentId.value
+
+  if (id === activeFragmentId.value) {
+    nextActiveId = nextFragments[Math.min(index, nextFragments.length - 1)].id
+  }
+
+  persistNoteFragments(nextFragments)
+
+  if (nextActiveId !== activeFragmentId.value)
+    selectNoteFragment(nextActiveId)
+}
+
+function reorderNoteFragments(ids: string[]) {
+  if (ids.length !== noteFragments.value.length)
+    return
+
+  const byId = new Map(
+    noteFragments.value.map(fragment => [fragment.id, fragment]),
+  )
+  const nextFragments = ids
+    .map(id => byId.get(id))
+    .filter((fragment): fragment is NoteFragment => Boolean(fragment))
+
+  if (nextFragments.length === noteFragments.value.length)
+    persistNoteFragments(nextFragments)
+}
 
 function readAiEditor() {
   if (
@@ -564,9 +699,9 @@ function onCopyNoteMenu() {
   if (!isSelectedNoteContentReady.value)
     return
 
-  const noteContent = selectedNote.value?.content
-  if (noteContent === undefined)
-    return
+  const noteContent = noteFragments.value
+    .map(fragment => fragment.content)
+    .join('\n\n')
   copy(noteContent)
   useDonations().incrementCopy('notes')
 }
@@ -717,6 +852,16 @@ onBeforeUnmount(() => {
               <NotesEditorTags
                 :note="displayedNote"
                 :disabled="!isSelectedNoteContentReady"
+              />
+              <NotesFragments
+                :fragments="noteFragments"
+                :active-id="activeFragmentId"
+                :disabled="!isSelectedNoteContentReady"
+                @select="selectNoteFragment"
+                @add="addNoteFragment"
+                @rename="renameNoteFragment"
+                @delete="deleteNoteFragment"
+                @reorder="reorderNoteFragments"
               />
             </div>
           </div>
