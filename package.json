@@ -56,7 +56,10 @@
     "bench:prepare": "node scripts/benchmark/cli.cjs prepare",
     "bench:start": "node scripts/benchmark/cli.cjs start",
     "bench:report": "node scripts/benchmark/cli.cjs report",
-    "dev:playground": "vite --config playground/vite.config.mjs"
+    "dev:playground": "vite --config playground/vite.config.mjs",
+    "build:akashcode:mac": "vite build && npm run build:main && electron-builder --config electron-builder.akashcode.json --mac --x64 --arm64 --publish never",
+    "build:akashcode:mac:arm64": "vite build && npm run build:main && electron-builder --config electron-builder.akashcode.json --mac --arm64 --publish never",
+    "build:akashcode:mac:x64": "vite build && npm run build:main && electron-builder --config electron-builder.akashcode.json --mac --x64 --publish never"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.118",
