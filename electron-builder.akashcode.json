@@ -12,14 +12,19 @@
     "build/shared/**/*",
     "!build/**/*.map"
   ],
-  "asarUnpack": ["node_modules/@lydell/**/*"],
+  "asarUnpack": [
+    "node_modules/@lydell/**/*"
+  ],
   "publish": {
     "provider": "github",
     "owner": "akash9696",
     "repo": "massCode"
   },
   "mac": {
-    "target": ["dmg", "zip"],
+    "target": [
+      "dmg",
+      "zip"
+    ],
     "icon": "build/icons/icon.icns",
     "category": "public.app-category.productivity",
     "hardenedRuntime": false,
@@ -29,7 +34,9 @@
   "protocols": [
     {
       "name": "AkashCode",
-      "schemes": ["akashcode"]
+      "schemes": [
+        "masscode"
+      ]
     }
   ]
 }
