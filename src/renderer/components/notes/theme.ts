@@ -1,6 +1,9 @@
 import { editorScrollbarTheme } from '@/components/cm-extensions/scrollbarTheme'
 import { EditorView } from '@codemirror/view'
-import { resolveMarkdownAppearance } from '~/shared/markdownAppearance'
+import {
+  MARKDOWN_APPEARANCE_DEFAULTS,
+  resolveMarkdownAppearance,
+} from '~/shared/markdownAppearance'
 
 export interface NotesEditorThemeSettings {
   fontSize: number
@@ -10,7 +13,7 @@ export interface NotesEditorThemeSettings {
   limitWidth: boolean
   lineNumbers: boolean
   indentSize: number
-  markdownAppearance: import('~/shared/markdownAppearance').MarkdownAppearanceSettings
+  markdownAppearance?: import('~/shared/markdownAppearance').MarkdownAppearanceSettings
 }
 
 
@@ -18,7 +21,10 @@ export function createMarkdownAppearanceCssVariables(
   notesSettings: NotesEditorThemeSettings,
   isDark: boolean,
 ) {
-  const md = resolveMarkdownAppearance(notesSettings.markdownAppearance, isDark)
+  const md = resolveMarkdownAppearance(
+    notesSettings.markdownAppearance ?? MARKDOWN_APPEARANCE_DEFAULTS,
+    isDark,
+  )
 
   return {
     '--md-text-color': md.textColor,
