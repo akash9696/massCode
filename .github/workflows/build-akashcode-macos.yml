@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - build/akashcode-macos
+      - feature/markdown-appearance
   workflow_dispatch:
 
 permissions:
@@ -35,8 +36,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Test note fragments
-        run: pnpm exec vitest run src/renderer/components/notes/__tests__/noteFragments.test.ts
+      - name: Test AkashCode note features
+        run: pnpm exec vitest run src/renderer/components/notes/__tests__/noteFragments.test.ts src/shared/__tests__/markdownAppearance.test.ts src/renderer/components/notes/__tests__/theme.test.ts
 
       - name: Build AkashCode for macOS
         run: pnpm build:akashcode:mac:arm64
