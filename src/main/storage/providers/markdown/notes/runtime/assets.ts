@@ -5,20 +5,17 @@ import { constants as fsConstants } from 'node:fs'
 import { lstat, open, readFile, rename, rm } from 'node:fs/promises'
 import path from 'node:path'
 import fs from 'fs-extra'
+import {
+  NOTE_ATTACHMENT_EXTENSIONS,
+  NOTE_ATTACHMENT_MAX_BYTES,
+  NOTE_ATTACHMENT_MIME_BY_EXTENSION,
+} from '../../../../../../shared/noteAttachments'
 import { prioritizeCloudDownload } from '../../cloudDownloads'
 import { getFileAvailability } from '../../runtime/shared/cloudFiles'
 
 const ASSET_ID_LENGTHS = new Set([16, 21])
-const READER_MIME_BY_EXTENSION: Record<string, string> = {
-  '.bmp': 'image/bmp',
-  '.gif': 'image/gif',
-  '.jpeg': 'image/jpeg',
-  '.jpg': 'image/jpeg',
-  '.png': 'image/png',
-  '.svg': 'image/svg+xml',
-  '.webp': 'image/webp',
-}
-const WRITER_EXTENSIONS = new Set(['.jpeg', '.jpg', '.png'])
+const READER_MIME_BY_EXTENSION = NOTE_ATTACHMENT_MIME_BY_EXTENSION
+const WRITER_EXTENSIONS = NOTE_ATTACHMENT_EXTENSIONS
 const SAFE_RESPONSE_HEADERS = {
   'Cache-Control': 'no-store',
   'X-Content-Type-Options': 'nosniff',
@@ -46,14 +43,19 @@ export function parseNotesAssetWritePayload(
   if (
     typeof candidate.ext !== 'string'
     || !(candidate.buffer instanceof ArrayBuffer)
+    || candidate.buffer.byteLength > NOTE_ATTACHMENT_MAX_BYTES
   ) {
     return null
   }
 
-  return { buffer: candidate.buffer, ext: candidate.ext }
+  const ext = candidate.ext.toLowerCase()
+  if (!WRITER_EXTENSIONS.has(ext))
+    return null
+
+  return { buffer: candidate.buffer, ext }
 }
 
-function hasExpectedImageSignature(data: Buffer, extension: string): boolean {
+function hasExpectedAssetSignature(data: Buffer, extension: string): boolean {
   if (extension === '.png') {
     return data
       .subarray(0, 8)
@@ -69,7 +71,30 @@ function hasExpectedImageSignature(data: Buffer, extension: string): boolean {
     )
   }
 
-  return false
+  if (extension === '.gif')
+    return data.subarray(0, 3).toString('ascii') === 'GIF'
+
+  if (extension === '.webp') {
+    return (
+      data.length >= 12
+      && data.subarray(0, 4).toString('ascii') === 'RIFF'
+      && data.subarray(8, 12).toString('ascii') === 'WEBP'
+    )
+  }
+
+  if (extension === '.pdf')
+    return data.subarray(0, 5).toString('ascii') === '%PDF-'
+
+  if (extension === '.zip' || extension === '.docx' || extension === '.xlsx' || extension === '.pptx') {
+    return (
+      data.length >= 4
+      && data[0] === 0x50
+      && data[1] === 0x4B
+      && [0x03, 0x05, 0x07].includes(data[2] ?? -1)
+    )
+  }
+
+  return true
 }
 
 export function parseNotesAssetName(
@@ -145,7 +170,10 @@ export async function writeNotesAsset(
   }
 
   const data = Buffer.from(payload)
-  if (!hasExpectedImageSignature(data, extension)) {
+  if (data.length > NOTE_ATTACHMENT_MAX_BYTES) {
+    throw new Error('Notes asset exceeds maximum size')
+  }
+  if (!hasExpectedAssetSignature(data, extension)) {
     throw new Error('Notes asset payload does not match its extension')
   }
 
