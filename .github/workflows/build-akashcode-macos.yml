@@ -5,6 +5,7 @@ on:
     branches:
       - build/akashcode-macos
       - feature/markdown-appearance
+      - feature/note-attachments
   workflow_dispatch:
 
 permissions:
@@ -37,7 +38,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Test AkashCode note features
-        run: pnpm exec vitest run src/renderer/components/notes/__tests__/noteFragments.test.ts src/shared/__tests__/markdownAppearance.test.ts src/renderer/components/notes/__tests__/theme.test.ts
+        run: pnpm exec vitest run src/renderer/components/notes/__tests__/noteFragments.test.ts src/shared/__tests__/markdownAppearance.test.ts src/renderer/components/notes/__tests__/theme.test.ts src/shared/__tests__/noteAttachments.test.ts
 
       - name: Prepare AkashCode dev source
         run: |
