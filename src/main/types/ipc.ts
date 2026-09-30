@@ -92,6 +92,7 @@ type FsAction =
   | 'folder-icon:undo'
   | 'import-markdown-folder'
   | 'pick-note-image'
+  | 'pick-note-attachment'
   | 'notes-asset'
 type ThemeAction = 'list' | 'get' | 'open-dir' | 'create-template' | 'changed'
 type SpacesAction =
@@ -303,6 +304,10 @@ export interface NoteImagePickerInput {
 }
 export type NoteImagePickerResult =
   | { status: 'saved', url: string, bytes: number }
+  | { status: 'cancelled' | 'stale' | 'failed' }
+
+export type NoteAttachmentPickerResult =
+  | { status: 'saved', url: string, bytes: number, name: string }
   | { status: 'cancelled' | 'stale' | 'failed' }
 
 export interface TaskCleanupResult {
