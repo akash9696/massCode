@@ -10,6 +10,11 @@ import {
   WidgetType,
 } from '@codemirror/view'
 import {
+  classifyNoteAttachment,
+  getNoteAttachmentExtension,
+  isManagedNoteAttachmentUrl,
+} from '~/shared/noteAttachments'
+import {
   getDrawingIdFromUrl,
   openDrawingInSpace,
   renderDrawingEmbed,
@@ -24,14 +29,21 @@ interface ImageBlocksOptions {
   showSourceWhenSelectionInside?: boolean
 }
 
-function extractImageUrl(
+interface ImageReference {
+  alt: string
+  url: string
+}
+
+function extractImageReference(
   state: EditorState,
   from: number,
   to: number,
-): string | null {
+): ImageReference | null {
   const text = state.sliceDoc(from, to)
-  const match = /!\[[^\]]*\]\(([^)]+)\)/.exec(text)
-  return match?.[1] ?? null
+  const match = /!\[([^\]]*)\]\(([^)]+)\)/.exec(text)
+  if (!match)
+    return null
+  return { alt: match[1] || 'attachment', url: match[2] }
 }
 
 function isSelectionInsideRange(
@@ -59,9 +71,143 @@ function isSelectionInsideRange(
   return false
 }
 
+function attachmentFrame(): HTMLDivElement {
+  const frame = document.createElement('div')
+  frame.style.maxWidth = '100%'
+  frame.style.border = '1px solid var(--border)'
+  frame.style.borderRadius = '8px'
+  frame.style.overflow = 'hidden'
+  frame.style.background = 'var(--card)'
+  return frame
+}
+
+function attachmentTitle(label: string): HTMLDivElement {
+  const title = document.createElement('div')
+  title.textContent = label
+  title.style.padding = '8px 10px'
+  title.style.fontSize = '12px'
+  title.style.color = 'var(--muted-foreground)'
+  title.style.borderBottom = '1px solid var(--border)'
+  title.style.whiteSpace = 'nowrap'
+  title.style.overflow = 'hidden'
+  title.style.textOverflow = 'ellipsis'
+  return title
+}
+
+function renderManagedAttachment(
+  root: HTMLElement,
+  reference: ImageReference,
+) {
+  const kind = classifyNoteAttachment(reference.url)
+
+  if (kind === 'image') {
+    const img = document.createElement('img')
+    img.src = reference.url
+    img.alt = reference.alt
+    img.style.maxWidth = '100%'
+    img.style.borderRadius = '8px'
+    img.style.border = '1px solid var(--border)'
+    img.style.display = 'block'
+    img.setAttribute('draggable', 'false')
+    root.append(img)
+    return
+  }
+
+  const frame = attachmentFrame()
+  frame.append(attachmentTitle(reference.alt))
+
+  if (kind === 'pdf') {
+    const embed = document.createElement('embed')
+    embed.src = reference.url
+    embed.type = 'application/pdf'
+    embed.style.display = 'block'
+    embed.style.width = '100%'
+    embed.style.height = '560px'
+    embed.dataset.noteAttachmentInteractive = 'true'
+    frame.append(embed)
+  }
+  else if (kind === 'audio') {
+    const audio = document.createElement('audio')
+    audio.src = reference.url
+    audio.controls = true
+    audio.preload = 'metadata'
+    audio.style.display = 'block'
+    audio.style.boxSizing = 'border-box'
+    audio.style.width = '100%'
+    audio.style.padding = '10px'
+    audio.dataset.noteAttachmentInteractive = 'true'
+    frame.append(audio)
+  }
+  else if (kind === 'video') {
+    const video = document.createElement('video')
+    video.src = reference.url
+    video.controls = true
+    video.preload = 'metadata'
+    video.style.display = 'block'
+    video.style.width = '100%'
+    video.style.maxHeight = '560px'
+    video.style.background = '#000'
+    video.dataset.noteAttachmentInteractive = 'true'
+    frame.append(video)
+  }
+  else if (kind === 'text') {
+    const pre = document.createElement('pre')
+    pre.textContent = 'Loading preview…'
+    pre.style.margin = '0'
+    pre.style.maxHeight = '360px'
+    pre.style.overflow = 'auto'
+    pre.style.padding = '12px'
+    pre.style.fontFamily = 'var(--notes-code-font, var(--font-mono))'
+    pre.style.fontSize = '12px'
+    pre.style.whiteSpace = 'pre-wrap'
+    pre.style.wordBreak = 'break-word'
+    pre.dataset.noteAttachmentInteractive = 'true'
+    frame.append(pre)
+
+    void fetch(reference.url)
+      .then(response => response.ok ? response.text() : Promise.reject(new Error('Unavailable')))
+      .then((text) => {
+        pre.textContent = text.length > 50000
+          ? `${text.slice(0, 50000)}\n\n…preview truncated…`
+          : text
+      })
+      .catch(() => {
+        pre.textContent = 'Preview unavailable'
+      })
+  }
+  else {
+    const body = document.createElement('div')
+    body.style.display = 'flex'
+    body.style.alignItems = 'center'
+    body.style.gap = '10px'
+    body.style.padding = '14px'
+    body.style.color = 'var(--foreground)'
+
+    const icon = document.createElement('span')
+    icon.textContent = '📎'
+    icon.style.fontSize = '20px'
+
+    const details = document.createElement('div')
+    const name = document.createElement('div')
+    name.textContent = reference.alt
+    name.style.fontWeight = '600'
+    const extension = document.createElement('div')
+    extension.textContent
+      = getNoteAttachmentExtension(reference.url).slice(1).toUpperCase()
+        || 'FILE'
+    extension.style.fontSize = '11px'
+    extension.style.color = 'var(--muted-foreground)'
+    details.append(name, extension)
+    body.append(icon, details)
+    frame.append(body)
+  }
+
+  root.append(frame)
+}
+
 class ImageWidget extends WidgetType {
   constructor(
-    readonly url: string,
+    readonly reference: ImageReference,
     readonly isDark: boolean,
     readonly activateSourceOnClick: boolean,
   ) {
@@ -70,7 +216,8 @@ class ImageWidget extends WidgetType {
 
   eq(other: ImageWidget): boolean {
     return (
-      this.url === other.url
+      this.reference.url === other.reference.url
+      && this.reference.alt === other.reference.alt
       && this.isDark === other.isDark
       && this.activateSourceOnClick === other.activateSourceOnClick
     )
@@ -81,11 +228,10 @@ class ImageWidget extends WidgetType {
     root.style.maxWidth = '100%'
     root.style.padding = '4px 0'
 
-    if (this.activateSourceOnClick) {
+    if (this.activateSourceOnClick)
       root.style.cursor = 'text'
-    }
 
-    const drawingId = getDrawingIdFromUrl(this.url)
+    const drawingId = getDrawingIdFromUrl(this.reference.url)
 
     if (drawingId) {
       const container = document.createElement('div')
@@ -97,32 +243,36 @@ class ImageWidget extends WidgetType {
       root.append(container)
       void renderDrawingEmbed(container, drawingId, this.isDark)
 
-      if (!this.activateSourceOnClick) {
+      if (!this.activateSourceOnClick)
         root.style.cursor = 'pointer'
-      }
+    }
+    else if (isManagedNoteAttachmentUrl(this.reference.url)) {
+      renderManagedAttachment(root, this.reference)
     }
     else {
+      // Preserve ordinary Markdown image behavior for remote/local URLs that
+      // are not managed AkashCode assets.
       const img = document.createElement('img')
-      img.src = this.url
+      img.src = this.reference.url
+      img.alt = this.reference.alt
       img.style.maxWidth = '100%'
       img.style.borderRadius = '8px'
       img.style.border = '1px solid var(--border)'
       img.style.display = 'block'
       img.setAttribute('draggable', 'false')
-
       root.append(img)
     }
 
     root.addEventListener('mousedown', (event) => {
-      if (event.button !== 0) {
+      if (event.button !== 0)
         return
-      }
 
-      // Like internal links: Cmd/Ctrl+Click opens the drawing in the
-      // Drawings space; in preview mode a plain click works too.
+      const target = event.target as HTMLElement | null
+      if (target?.closest('[data-note-attachment-interactive="true"]'))
+        return
+
       if (drawingId) {
         const isNavigationClick = isMac ? event.metaKey : event.ctrlKey
-
         if (isNavigationClick || !this.activateSourceOnClick) {
           event.preventDefault()
           openDrawingInSpace(drawingId)
@@ -130,9 +280,8 @@ class ImageWidget extends WidgetType {
         }
       }
 
-      if (!this.activateSourceOnClick) {
+      if (!this.activateSourceOnClick)
         return
-      }
 
       event.preventDefault()
       const blockFrom = view.posAtDOM(root, 0)
@@ -170,8 +319,8 @@ function buildDecorations(
       if (node.name !== 'Image')
         return
 
-      const url = extractImageUrl(state, node.from, node.to)
-      if (!url)
+      const reference = extractImageReference(state, node.from, node.to)
+      if (!reference)
         return
 
       blocks.push({ from: node.from, to: node.to })
@@ -188,7 +337,11 @@ function buildDecorations(
         node.to,
         Decoration.replace({
           block: true,
-          widget: new ImageWidget(url, isDark, showSourceWhenSelectionInside),
+          widget: new ImageWidget(
+            reference,
+            isDark,
+            showSourceWhenSelectionInside,
+          ),
         }),
       )
     },
@@ -207,8 +360,7 @@ export function getImageBlockRanges(
       if (node.name !== 'Image')
         return
 
-      const url = extractImageUrl(state, node.from, node.to)
-      if (url)
+      if (extractImageReference(state, node.from, node.to))
         ranges.push({ from: node.from, to: node.to })
     },
   })
@@ -236,8 +388,6 @@ export function createImageBlocks(options: ImageBlocksOptions = {}) {
       const focusChanged = transaction.effects.some(e =>
         e.is(setEditorFocusEffect),
       )
-      // The syntax tree can advance asynchronously (without a document
-      // change), so compare tree identity to pick up late-parsed blocks.
       const treeChanged
         = syntaxTree(transaction.startState) !== syntaxTree(transaction.state)
 
@@ -250,9 +400,6 @@ export function createImageBlocks(options: ImageBlocksOptions = {}) {
         )
       }
 
-      // A pure selection change only matters when the cursor enters or
-      // leaves one of the current blocks. Unfreezing the reveal selection
-      // (mouseup after a drag) changes the effective selection too.
       if (
         showSourceWhenSelectionInside
         && (revealSelectionChanged(transaction)
