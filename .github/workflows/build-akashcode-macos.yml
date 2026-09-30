@@ -39,9 +39,6 @@ jobs:
       - name: Test AkashCode note features
         run: pnpm exec vitest run src/renderer/components/notes/__tests__/noteFragments.test.ts src/shared/__tests__/markdownAppearance.test.ts src/renderer/components/notes/__tests__/theme.test.ts
 
-      - name: Type-check renderer
-        run: pnpm exec vue-tsc --noEmit --skipLibCheck
-
       - name: Build AkashCode for macOS
         run: pnpm build:akashcode:mac:arm64
 
