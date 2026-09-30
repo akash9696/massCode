@@ -72,7 +72,10 @@ import {
   createImageBlocks,
   getImageBlockRanges,
 } from './cm-extensions/imageBlocks'
-import { createImageInsert } from './cm-extensions/imageInsert'
+import {
+  createAttachmentInsert,
+  pickAndInsertAttachment,
+} from './cm-extensions/attachmentInsert'
 import { createInternalLinks } from './cm-extensions/internalLinks'
 import { activatePlannedLink } from './cm-extensions/internalLinks/activatePlannedLink'
 import { getPlannedLinkActions } from './cm-extensions/internalLinks/trigger'
@@ -366,7 +369,7 @@ function createEditorState(doc: string): EditorState {
   }
   else {
     extensions.push(placeholder('Start typing...'))
-    extensions.push(createImageInsert(() => props.noteId))
+    extensions.push(createAttachmentInsert(() => props.noteId))
   }
 
   if (!raw) {
@@ -1094,6 +1097,9 @@ function onMenuCommand(command: EditorMenuCommand, rootOnly = false) {
       break
     case 'horizontal-rule':
       insertHorizontalRule(view)
+      break
+    case 'attachment':
+      void pickAndInsertAttachment(view, () => props.noteId)
       break
     case 'code-block':
       insertCodeBlock(view)
