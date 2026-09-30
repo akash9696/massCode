@@ -25,6 +25,7 @@ import {
   undoFolderIconChange,
   writeFolderIcon,
 } from '../../folderIcons'
+import { pickNoteAttachment } from '../../noteAttachmentPicker'
 import { pickNoteImage, writeCapturedNoteImage } from '../../noteImagePicker'
 import { exportNote, parseNoteExportPayload } from '../../notesExport'
 import {
@@ -201,6 +202,12 @@ export function registerFsHandlers() {
 
   ipcMain.handle('fs:pick-note-image', (event, payload: unknown) =>
     pickNoteImage(
+      payload,
+      BrowserWindow.fromWebContents(event.sender) ?? undefined,
+    ))
+
+  ipcMain.handle('fs:pick-note-attachment', (event, payload: unknown) =>
+    pickNoteAttachment(
       payload,
       BrowserWindow.fromWebContents(event.sender) ?? undefined,
     ))
