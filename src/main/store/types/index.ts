@@ -1,5 +1,6 @@
 import type { DateFormat } from '../../../shared/dateFormat'
 import type { HttpRequestPreviewFormat } from '../../../shared/httpPreview'
+import type { MarkdownAppearanceSettings } from '../../../shared/markdownAppearance'
 
 export type SpaceLayoutMode = 'all-panels' | 'list-editor' | 'editor-only'
 export type NotesEditorMode = 'raw' | 'livePreview' | 'preview'
@@ -238,6 +239,7 @@ export interface NotesEditorSettings {
   wrapTables: boolean
   lineNumbers: boolean
   indentSize: number
+  markdownAppearance: MarkdownAppearanceSettings
 }
 
 export interface MathSettings {
