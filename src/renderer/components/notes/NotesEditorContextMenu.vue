@@ -26,6 +26,7 @@ import {
   ListChecks,
   ListOrdered,
   Minus,
+  Paperclip,
   Pilcrow,
   RemoveFormatting,
   SquareCode,
@@ -58,6 +59,7 @@ export type EditorMenuCommand =
   | 'callout'
   | 'horizontal-rule'
   | 'code-block'
+  | 'attachment'
   | 'table-insert-row-above'
   | 'table-insert-row-below'
   | 'table-insert-column-left'
@@ -305,6 +307,10 @@ function run(command: EditorMenuCommand) {
           {{ i18n.t("notes.editor.menu.insert.horizontalRule") }}
         </ContextMenu.ContextMenuItem>
         <ContextMenu.ContextMenuSeparator />
+        <ContextMenu.ContextMenuItem @select="run('attachment')">
+          <Paperclip />
+          Attach File…
+        </ContextMenu.ContextMenuItem>
         <ContextMenu.ContextMenuItem @select="run('code-block')">
           <SquareCode />
           {{ i18n.t("notes.editor.menu.insert.codeBlock") }}
