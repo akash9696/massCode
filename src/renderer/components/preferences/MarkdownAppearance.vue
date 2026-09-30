@@ -1,8 +1,5 @@
 <script setup lang="ts">
-import type {
-  MarkdownAppearancePreset,
-  MarkdownAppearanceValues,
-} from '~/shared/markdownAppearance'
+import type { MarkdownAppearancePreset } from '~/shared/markdownAppearance'
 import { Button } from '@/components/ui/shadcn/button'
 import * as Select from '@/components/ui/shadcn/select'
 import { useNotesEditor, useTheme } from '@/composables'
