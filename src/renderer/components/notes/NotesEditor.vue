@@ -99,7 +99,10 @@ import { moveSelectionToAdjacentTableCell } from './cm-extensions/tableNavigatio
 import { isOwnNoteContentEcho } from './editorSync'
 import { resolveNativeNoteTarget } from './inspector/nativeTarget'
 import { createOutlineMove, getOutline } from './inspector/outline'
-import { createNotesEditTheme } from './theme'
+import {
+  createMarkdownAppearanceCssVariables,
+  createNotesEditTheme,
+} from './theme'
 
 interface Props {
   disabled?: boolean
@@ -213,43 +216,44 @@ const navigationKeymap: KeyBinding[] = [
   },
 ]
 
-const presentationTheme = EditorView.theme({
-  '&': {
-    height: '100%',
-    backgroundColor: 'var(--background)',
-    color: 'var(--foreground)',
-  },
-  '.cm-content': {
-    fontFamily: 'var(--font-sans)',
-    padding: '22px 28px 34px',
-    fontSize: 'calc(1rem * var(--markdown-scale))',
-    lineHeight: '1.58',
-    maxWidth: '980px',
-    margin: '0 auto',
-    // Широкий блок-виджет не должен распирать контент и давать редактору
-    // горизонтальную прокрутку (см. minWidth в createNotesEditThemeStyles).
-    minWidth: '0',
-  },
-  '.cm-gutters': {
-    display: 'none',
-  },
-  ...editorScrollbarTheme,
-  '.cm-line': {
-    padding: '0',
-  },
-  '&.cm-focused': {
-    outline: 'none',
-  },
-  '.cm-selectionBackground': {
-    backgroundColor: 'transparent !important',
-  },
-  '&.cm-focused .cm-selectionBackground': {
-    backgroundColor: 'transparent !important',
-  },
-  '.cm-cursor, .cm-dropCursor': {
-    display: 'none',
-  },
-})
+function createPresentationTheme() {
+  return EditorView.theme({
+    '&': {
+      height: '100%',
+      backgroundColor: 'var(--background)',
+      color: 'var(--md-text-color)',
+      ...createMarkdownAppearanceCssVariables(notesSettings, isDark.value),
+    },
+    '.cm-content': {
+      fontFamily: 'var(--font-sans)',
+      padding: '22px 28px 34px',
+      fontSize: 'calc(1rem * var(--markdown-scale))',
+      lineHeight: '1.58',
+      maxWidth: '980px',
+      margin: '0 auto',
+      minWidth: '0',
+    },
+    '.cm-gutters': {
+      display: 'none',
+    },
+    ...editorScrollbarTheme,
+    '.cm-line': {
+      padding: '0',
+    },
+    '&.cm-focused': {
+      outline: 'none',
+    },
+    '.cm-selectionBackground': {
+      backgroundColor: 'transparent !important',
+    },
+    '&.cm-focused .cm-selectionBackground': {
+      backgroundColor: 'transparent !important',
+    },
+    '.cm-cursor, .cm-dropCursor': {
+      display: 'none',
+    },
+  })
+}
 
 const NoSetextHeading: MarkdownConfig = {
   remove: ['SetextHeading'],
@@ -263,8 +267,8 @@ function createEditorState(doc: string): EditorState {
 
   const extensions: Extension[] = [
     props.presentation
-      ? presentationTheme
-      : createNotesEditTheme(raw, notesSettings),
+      ? createPresentationTheme()
+      : createNotesEditTheme(raw, notesSettings, isDark.value),
     EditorView.lineWrapping,
     createClipboardOutput(isWindows),
     createContentSearch(),
