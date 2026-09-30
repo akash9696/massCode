@@ -5,6 +5,7 @@ import { Switch } from '@/components/ui/shadcn/switch'
 import { useNotes, useNotesEditor } from '@/composables'
 import { useTaskPreferences } from '@/composables/useTaskPreferences'
 import { i18n } from '@/electron'
+import MarkdownAppearance from './MarkdownAppearance.vue'
 
 const { settings } = useNotesEditor()
 const { cleanupCompletedTasks } = useNotes()
@@ -146,6 +147,7 @@ async function onCleanupNow() {
         </template>
       </UiMenuFormItem>
     </UiMenuFormSection>
+    <MarkdownAppearance />
     <UiMenuFormSection :label="i18n.t('preferences:tasks.label')">
       <UiMenuFormItem :label="i18n.t('preferences:tasks.autoCleanup.label')">
         <Select.Select v-model="tasksSettings.autoCleanupCompleted">

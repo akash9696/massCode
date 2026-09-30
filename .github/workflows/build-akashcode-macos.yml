@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - build/akashcode-macos
+      - feature/markdown-appearance
   workflow_dispatch:
 
 permissions:
@@ -35,8 +36,23 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Test note fragments
-        run: pnpm exec vitest run src/renderer/components/notes/__tests__/noteFragments.test.ts
+      - name: Test AkashCode note features
+        run: pnpm exec vitest run src/renderer/components/notes/__tests__/noteFragments.test.ts src/shared/__tests__/markdownAppearance.test.ts src/renderer/components/notes/__tests__/theme.test.ts
+
+      - name: Prepare AkashCode dev source
+        run: |
+          rm -rf dev-package
+          mkdir -p dev-package
+          git archive HEAD | tar -x -C dev-package
+
+      - name: Upload AkashCode dev source
+        uses: actions/upload-artifact@v4
+        with:
+          name: AkashCode-dev-source
+          path: dev-package/
+          if-no-files-found: error
+          retention-days: 14
+          include-hidden-files: true
 
       - name: Build AkashCode for macOS
         run: pnpm build:akashcode:mac:arm64

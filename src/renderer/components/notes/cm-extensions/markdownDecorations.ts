@@ -38,7 +38,7 @@ class HorizontalRuleWidget extends WidgetType {
     hr.style.display = 'inline-block'
     hr.style.width = '100%'
     hr.style.verticalAlign = 'middle'
-    hr.style.borderTop = '1px solid var(--border)'
+    hr.style.borderTop = '1px solid var(--md-rule-color)'
     hr.style.margin = '0'
     hr.style.borderBottom = 'none'
     hr.style.borderLeft = 'none'
@@ -71,9 +71,9 @@ class CheckboxWidget extends WidgetType {
     checkbox.style.height = '18px'
     checkbox.style.marginRight = '6px'
     checkbox.style.borderRadius = '4px'
-    checkbox.style.border = `1px solid ${this.checked ? 'var(--primary)' : 'var(--border)'}`
+    checkbox.style.border = `1px solid ${this.checked ? 'var(--md-checkbox-color)' : 'var(--border)'}`
     checkbox.style.background = this.checked
-      ? 'var(--primary)'
+      ? 'var(--md-checkbox-color)'
       : 'var(--background)'
     checkbox.style.color = 'var(--primary-foreground)'
     checkbox.style.cursor = this.interactive ? 'pointer' : 'default'
@@ -199,43 +199,43 @@ const headingStyles: Record<
   }
 > = {
   ATXHeading1: {
-    fontSize: '1.95em',
-    fontWeight: '700',
+    fontSize: 'var(--md-h1-size)',
+    fontWeight: 'var(--md-h1-weight)',
     lineHeight: '1.25',
     paddingTop: '0.42em',
     paddingBottom: '0.2em',
   },
   ATXHeading2: {
-    fontSize: '1.65em',
-    fontWeight: '700',
+    fontSize: 'var(--md-h2-size)',
+    fontWeight: 'var(--md-h2-weight)',
     lineHeight: '1.28',
     paddingTop: '0.36em',
     paddingBottom: '0.18em',
   },
   ATXHeading3: {
-    fontSize: '1.42em',
-    fontWeight: '650',
+    fontSize: 'var(--md-h3-size)',
+    fontWeight: 'var(--md-h3-weight)',
     lineHeight: '1.3',
     paddingTop: '0.3em',
     paddingBottom: '0.15em',
   },
   ATXHeading4: {
-    fontSize: '1.22em',
-    fontWeight: '650',
+    fontSize: 'var(--md-h4-size)',
+    fontWeight: 'var(--md-h4-weight)',
     lineHeight: '1.34',
     paddingTop: '0.24em',
     paddingBottom: '0.12em',
   },
   ATXHeading5: {
-    fontSize: '1.08em',
-    fontWeight: '600',
+    fontSize: 'var(--md-h5-size)',
+    fontWeight: 'var(--md-h5-weight)',
     lineHeight: '1.4',
     paddingTop: '0.18em',
     paddingBottom: '0.08em',
   },
   ATXHeading6: {
-    fontSize: '0.96em',
-    fontWeight: '600',
+    fontSize: 'var(--md-h6-size)',
+    fontWeight: 'var(--md-h6-weight)',
     lineHeight: '1.42',
     paddingTop: '0.14em',
     paddingBottom: '0.06em',
@@ -243,20 +243,20 @@ const headingStyles: Record<
 }
 
 const inlineCodeStyle = [
-  'background:var(--muted)',
-  'border:1px solid var(--border)',
-  'color:var(--foreground)',
+  'background:var(--md-inline-code-bg)',
+  'border:1px solid var(--md-inline-code-border)',
+  'color:var(--md-inline-code-text)',
   'font-family:var(--notes-code-font, var(--font-mono))',
   'padding:1px 6px',
-  'border-radius:6px',
+  'border-radius:var(--md-inline-code-radius)',
   'font-size:0.9em',
   'line-height:1.45',
 ].join(';')
 
 const blockquoteBaseStyle = [
-  'background:var(--muted)',
-  'border-left:3px solid var(--primary)',
-  'color:var(--foreground)',
+  'background:var(--md-quote-bg)',
+  'border-left:var(--md-quote-border-width) solid var(--md-quote-border)',
+  'color:var(--md-quote-text)',
   'padding-left:12px',
   'padding-right:12px',
 ].join(';')
@@ -269,7 +269,7 @@ const calloutAccentByType: Record<CalloutType, string> = {
 }
 
 const FALLBACK_LIST_MARK_RE = /^([ \t]*)([-*+]|\d+\.)(?=\s)/
-const LIST_MARK_FALLBACK_STYLE = 'color:var(--muted-foreground)'
+const LIST_MARK_FALLBACK_STYLE = 'color:var(--md-list-marker)'
 
 const calloutBackgroundByType: Record<CalloutType, string> = {
   TODO: 'var(--callout-todo-bg)',
@@ -439,7 +439,7 @@ function buildDecorations(
           decorations.push(
             Decoration.line({
               attributes: {
-                style: `font-size:${fontSize};font-weight:${fontWeight};line-height:${lineHeight};padding-top:${paddingTop};padding-bottom:${paddingBottom}`,
+                style: `font-size:${fontSize};font-weight:${fontWeight};color:var(--md-${type === 'ATXHeading1' ? 'h1' : type === 'ATXHeading2' ? 'h2' : type === 'ATXHeading3' ? 'h3' : type === 'ATXHeading4' ? 'h4' : type === 'ATXHeading5' ? 'h5' : 'h6'}-color);line-height:${lineHeight};padding-top:${paddingTop};padding-bottom:${paddingBottom}`,
               },
             }).range(line.from),
           )
@@ -449,7 +449,7 @@ function buildDecorations(
         if (type === 'StrongEmphasis') {
           decorations.push(
             Decoration.mark({
-              attributes: { style: 'font-weight:700' },
+              attributes: { style: 'font-weight:700;color:var(--md-strong-color)' },
             }).range(node.from, node.to),
           )
         }
@@ -458,7 +458,7 @@ function buildDecorations(
         if (type === 'Emphasis') {
           decorations.push(
             Decoration.mark({
-              attributes: { style: 'font-style:italic' },
+              attributes: { style: 'font-style:italic;color:var(--md-emphasis-color)' },
             }).range(node.from, node.to),
           )
         }
@@ -467,7 +467,7 @@ function buildDecorations(
         if (type === 'Strikethrough') {
           decorations.push(
             Decoration.mark({
-              attributes: { style: 'text-decoration:line-through' },
+              attributes: { style: 'text-decoration:line-through;color:var(--md-strike-color)' },
             }).range(node.from, node.to),
           )
         }
@@ -478,7 +478,7 @@ function buildDecorations(
             Decoration.mark({
               attributes: {
                 style:
-                  'background:var(--text-highlight);color:#1f2937;border-radius:3px;padding:0 2px',
+                  'background:var(--md-highlight-bg);color:var(--md-highlight-text);border-radius:3px;padding:0 2px',
               },
             }).range(node.from, node.to),
           )
@@ -604,7 +604,7 @@ function buildDecorations(
             Decoration.mark({
               attributes: {
                 style:
-                  'text-decoration:underline;color:var(--primary);cursor:pointer',
+                  'text-decoration:underline;color:var(--md-link-color);cursor:pointer',
               },
             }).range(node.from, node.to),
           )

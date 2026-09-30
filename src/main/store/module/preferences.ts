@@ -20,6 +20,11 @@ import {
 } from '../../../shared/httpHistory'
 import { HTTP_PREVIEW_FORMATS } from '../../../shared/httpPreview'
 import { httpTransportSchema } from '../../../shared/httpTransport'
+import {
+  MARKDOWN_APPEARANCE_DEFAULTS,
+  MARKDOWN_APPEARANCE_PRESETS,
+  type MarkdownAppearanceSettings,
+} from '../../../shared/markdownAppearance'
 import { EDITOR_DEFAULTS, NOTES_EDITOR_DEFAULTS } from '../constants'
 import {
   asRecord,
@@ -163,6 +168,126 @@ function sanitizeCodeEditorSettings(value: unknown): EditorSettings {
   }
 }
 
+
+function sanitizeMarkdownAppearanceSettings(
+  value: unknown,
+): MarkdownAppearanceSettings {
+  const source = asRecord(value)
+  const custom = asRecord(source.custom)
+  const defaults = MARKDOWN_APPEARANCE_DEFAULTS.custom
+
+  return {
+    preset: readEnum(
+      source,
+      'preset',
+      MARKDOWN_APPEARANCE_PRESETS,
+      MARKDOWN_APPEARANCE_DEFAULTS.preset,
+    ),
+    custom: {
+      textColor: readString(custom, 'textColor', defaults.textColor),
+      strongColor: readString(custom, 'strongColor', defaults.strongColor),
+      emphasisColor: readString(custom, 'emphasisColor', defaults.emphasisColor),
+      strikeColor: readString(custom, 'strikeColor', defaults.strikeColor),
+      h1Color: readString(custom, 'h1Color', defaults.h1Color),
+      h2Color: readString(custom, 'h2Color', defaults.h2Color),
+      h3Color: readString(custom, 'h3Color', defaults.h3Color),
+      h4Color: readString(custom, 'h4Color', defaults.h4Color),
+      h5Color: readString(custom, 'h5Color', defaults.h5Color),
+      h6Color: readString(custom, 'h6Color', defaults.h6Color),
+      h1Size: readNumber(custom, 'h1Size', defaults.h1Size),
+      h2Size: readNumber(custom, 'h2Size', defaults.h2Size),
+      h3Size: readNumber(custom, 'h3Size', defaults.h3Size),
+      h4Size: readNumber(custom, 'h4Size', defaults.h4Size),
+      h5Size: readNumber(custom, 'h5Size', defaults.h5Size),
+      h6Size: readNumber(custom, 'h6Size', defaults.h6Size),
+      h1Weight: readNumber(custom, 'h1Weight', defaults.h1Weight),
+      h2Weight: readNumber(custom, 'h2Weight', defaults.h2Weight),
+      h3Weight: readNumber(custom, 'h3Weight', defaults.h3Weight),
+      h4Weight: readNumber(custom, 'h4Weight', defaults.h4Weight),
+      h5Weight: readNumber(custom, 'h5Weight', defaults.h5Weight),
+      h6Weight: readNumber(custom, 'h6Weight', defaults.h6Weight),
+      linkColor: readString(custom, 'linkColor', defaults.linkColor),
+      inlineCodeTextColor: readString(
+        custom,
+        'inlineCodeTextColor',
+        defaults.inlineCodeTextColor,
+      ),
+      inlineCodeBackground: readString(
+        custom,
+        'inlineCodeBackground',
+        defaults.inlineCodeBackground,
+      ),
+      inlineCodeBorderColor: readString(
+        custom,
+        'inlineCodeBorderColor',
+        defaults.inlineCodeBorderColor,
+      ),
+      inlineCodeRadius: readNumber(
+        custom,
+        'inlineCodeRadius',
+        defaults.inlineCodeRadius,
+      ),
+      codeBlockTextColor: readString(
+        custom,
+        'codeBlockTextColor',
+        defaults.codeBlockTextColor,
+      ),
+      codeBlockBackground: readString(
+        custom,
+        'codeBlockBackground',
+        defaults.codeBlockBackground,
+      ),
+      codeBlockBorderColor: readString(
+        custom,
+        'codeBlockBorderColor',
+        defaults.codeBlockBorderColor,
+      ),
+      codeBlockRadius: readNumber(
+        custom,
+        'codeBlockRadius',
+        defaults.codeBlockRadius,
+      ),
+      quoteTextColor: readString(
+        custom,
+        'quoteTextColor',
+        defaults.quoteTextColor,
+      ),
+      quoteBackground: readString(
+        custom,
+        'quoteBackground',
+        defaults.quoteBackground,
+      ),
+      quoteBorderColor: readString(
+        custom,
+        'quoteBorderColor',
+        defaults.quoteBorderColor,
+      ),
+      quoteBorderWidth: readNumber(
+        custom,
+        'quoteBorderWidth',
+        defaults.quoteBorderWidth,
+      ),
+      highlightTextColor: readString(
+        custom,
+        'highlightTextColor',
+        defaults.highlightTextColor,
+      ),
+      highlightBackground: readString(
+        custom,
+        'highlightBackground',
+        defaults.highlightBackground,
+      ),
+      listMarkerColor: readString(
+        custom,
+        'listMarkerColor',
+        defaults.listMarkerColor,
+      ),
+      ruleColor: readString(custom, 'ruleColor', defaults.ruleColor),
+      checkboxColor: readString(custom, 'checkboxColor', defaults.checkboxColor),
+    },
+  }
+}
+
 function sanitizeNotesEditorSettings(value: unknown): NotesEditorSettings {
   const source = asRecord(value)
 
@@ -203,6 +328,9 @@ function sanitizeNotesEditorSettings(value: unknown): NotesEditorSettings {
       source,
       'indentSize',
       PREFERENCES_DEFAULTS.editor.notes.indentSize,
+    ),
+    markdownAppearance: sanitizeMarkdownAppearanceSettings(
+      source.markdownAppearance,
     ),
   }
 }
