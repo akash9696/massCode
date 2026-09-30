@@ -1,4 +1,5 @@
 import type { EditorSettings, NotesEditorSettings } from './types'
+import { MARKDOWN_APPEARANCE_DEFAULTS } from '../../shared/markdownAppearance'
 
 export const LAYOUT_DEFAULTS = {
   sidebar: { width: 200, min: 120 },
@@ -32,4 +33,5 @@ export const NOTES_EDITOR_DEFAULTS: NotesEditorSettings = {
   wrapTables: false,
   lineNumbers: false,
   indentSize: 2,
+  markdownAppearance: MARKDOWN_APPEARANCE_DEFAULTS,
 }
